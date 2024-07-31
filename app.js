@@ -1,56 +1,76 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const Blog = require('./models/bolg');
+const { PrismaClient } = require('@prisma/client');
+const cors = require('cors'); // Import the cors package
 const app = express();
-// db conection
-const dburi = 'mongodb+srv://mohammadghiasi:Mgh3300305421@ghiasi.iekimql.mongodb.net/ghiasidb?retryWrites=true&w=majority&appName=ghiasi';
+const prisma = new PrismaClient();
 
+app.use(cors()); // Use the cors middleware
+app.use(express.json());
 
-mongoose.connect(dburi)
-    .then((result) => {
-        console.log('conected');
-        app.listen('3000')
-    })
-    .catch((err) => {
-        console.log(err);
-    });
-
-
-app.get('/add', (requst, response) => {
-    const blog = new Blog({
-        title: 'phones',
-        sinppet: 'mouid ghiasi',
-        body: 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Asperiores voluptatem itaque minus fugiat atque cupiditate architecto? Fugiat in dicta eaque possimus, consequatur reiciendis adipisci nisi repellat recusandae, quae architecto magnam!'
-    });
-    blog.save()
-        .then((result) => response.send(result))
-        .catch((error) => console.log(error));
-})
-
-app.get('/getblogs', (requst, response) => {
-    Blog.find()
-        .then((result) => response.send(result))
-        .catch((error) => console.log(error));
-});
-app.get('/getblog', (requst, response) => {
-    Blog.findById('66a91e81d18a7d70c4d6f536')
-        .then((result) => response.send(result))
-        .catch((error) => console.log(error));
-});
-app.get('/deletblog', (requst, response) => {
-    Blog.findByIdAndDelete('66a91da9bbf76f0abf7e22bb')
-        .then((result) => response.send('deleted'))
-        .catch((error) => console.log(error));
-});
-app.get('/deletall', (requst, response) => {
-    Blog.deleteMany({})
-        .then((result) => response.send('deleted'))
-        .catch((error) => console.log(error));
+// Create a new blog
+app.post('/blogs', async (req, res) => {
+    try {
+        const blog = await prisma.blog.create({
+            data: req.body
+        });
+        res.status(201).json(blog);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 });
 
+// Get all blogs
+app.get('/blogs', async (req, res) => {
+    try {
+        const blogs = await prisma.blog.findMany();
+        res.status(200).json(blogs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-app.get('/', function (req, res) {
-    res.sendFile('./view/index.html', { root: __dirname })
-})
+// Get a single blog by ID
+app.get('/blogs/:id', async (req, res) => {
+    try {
+        const blog = await prisma.blog.findUnique({
+            where: { id: parseInt(req.params.id) }
+        });
+        if (blog) {
+            res.status(200).json(blog);
+        } else {
+            res.status(404).json({ error: 'Blog not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
+// Update a blog by ID
+app.put('/blogs/:id', async (req, res) => {
+    try {
+        const blog = await prisma.blog.update({
+            where: { id: parseInt(req.params.id) },
+            data: req.body
+        });
+        res.status(200).json(blog);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 
+// Delete a blog by ID
+app.delete('/blogs/:id', async (req, res) => {
+    try {
+        await prisma.blog.delete({
+            where: { id: parseInt(req.params.id) }
+        });
+        res.status(200).json({ message: 'Blog deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
