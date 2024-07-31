@@ -1,10 +1,18 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const cors = require('cors'); // Import the cors package
+
 const app = express();
 const prisma = new PrismaClient();
+const corsOptions = {
+    origin: '*', // Allow all origins
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allow these methods
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
 
-app.use(cors()); // Use the cors middleware
+
+app.use(cors(corsOptions)); // Use the cors middleware
 app.use(express.json());
 
 // Create a new blog
@@ -70,6 +78,7 @@ app.delete('/blogs/:id', async (req, res) => {
     }
 });
 
+// Use the PORT environment variable or default to 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
